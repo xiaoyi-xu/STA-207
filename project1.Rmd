@@ -1,0 +1,87 @@
+---
+title: "207project1"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(haven)
+star<-read_sav("STAR_Students.sav")
+star<-data.frame(schoolid=as.factor(star$g1schid),teacherid=star$g1tchid,classtype=as.factor(star$g1classtype),math=star$g1tmathss)
+star<-na.omit(star)
+#mean, standard deviations, missing values, quantiles
+library(dplyr)
+a<-aggregate(star$math,by=list(star$classtype),summary)
+
+# math scale scores
+mathscale<-aggregate(star$math,by=list(star$teacherid),mean)
+mathscale<-data.frame(teacherid=mathscale$Group.1, scale=mathscale$x)
+
+newd<-merge(star, mathscale, by="teacherid", all = T)
+newd<-newd[,-4]
+newd<-newd[!duplicated(newd), ]
+
+# boxplot
+library(ggplot2)
+ggplot(data=newd)+
+  geom_boxplot(mapping=aes(x=classtype,y=scale))
+
+ggplot(data=newd)+
+  geom_boxplot(mapping=aes(x=schoolid,y=scale))
+
+# anova
+anova.fit<-aov(scale~schoolid+classtype,data=newd)
+summary(anova.fit)
+#interaction
+anova.fit1<-aov(scale~classtype*schoolid,data=newd)
+summary(anova.fit1)
+#diagnostic plots
+par(mfrow=c(2,2))
+plot(anova.fit)
+
+#Tukey's range test
+TukeyHSD(anova.fit,which=2)
+
+which.max(newd$scale)
+newd$schoolid[which.max(newd$scale)]
+second<-newd[-179,]
+newd$schoolid[which.max(second$scale)]
+Tukey.test<-TukeyHSD(anova.fit,conf.level = 0.95)
+(contrast<-Tukey.test$schoolid['216537-168214',])
+
+```
+
+```{r}
+# median
+library(haven)
+star<-read_sav("STAR_Students.sav")
+star<-data.frame(schoolid=as.factor(star$g1schid),teacherid=star$g1tchid,classtype=as.factor(star$g1classtype),math=star$g1tmathss)
+star<-na.omit(star)
+mathscale<-aggregate(star$math,by=list(star$teacherid),median)
+mathscale<-data.frame(teacherid=mathscale$Group.1, scale=mathscale$x)
+
+newd<-merge(star, mathscale, by="teacherid", all = T)
+newd<-newd[,-4]
+newd<-newd[!duplicated(newd), ]
+
+anova<-aov(scale~schoolid+classtype,data=newd)
+summary(anova)                                                                                                                                                                                  
+par(mfrow=c(2,2))
+plot(anova)
+
+TukeyHSD(anova,which=2)
+
+which.max(newd$scale)
+newd$schoolid[which.max(newd$scale)]
+second<-newd[-53,]
+newd$schoolid[which.max(second$scale)]
+Tukey.test<-TukeyHSD(anova,conf.level = 0.95)
+#(contrast<-Tukey.test$schoolid['168214-216537',])
+```
+
+
+
+
